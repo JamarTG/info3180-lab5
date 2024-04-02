@@ -8,6 +8,9 @@ This file creates your application.
 from app import app
 from flask import render_template, request, jsonify, send_file
 import os
+from app.forms import MovieForm
+from app.models import Movie
+from . import db
 
 
 ###
@@ -18,6 +21,33 @@ import os
 def index():
     return jsonify(message="This is the beginning of our API")
 
+@app.route("/api/v1/movies", methods=["POST"])
+def movies():
+    form = MovieForm()
+    errors = []
+    status_code = 201
+    
+    try:
+        if form.validate_on_submit():
+           
+            if form_errors(form) != []: 
+                errors = form_errors(form)
+                status_code = 400
+                return jsonify({"errors": errors}), status_code
+            
+            movie = Movie(title=form.title.data, poster=form.poster.data, description=form.description.data)
+            print(movie.title, movie.poster, movie.description)
+            db.session.add(movie)
+            db.session.commit()
+    except:
+        return form_errors(form)
+            
+         
+    return jsonify({
+                    "title": form.title.data,
+                    "poster":form.poster.data,
+                    "description": form.description.data}) , status_code
+    
 
 ###
 # The functions below should be applicable to all Flask apps.
