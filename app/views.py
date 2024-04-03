@@ -29,53 +29,50 @@ def get_csrf():
 
 @app.route("/api/v1/movies", methods=["GET", "POST"])
 def movies():
-    form = MovieForm()
     errors = []
-    status_code = 201
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    print(basedir)
+    if request.method == "GET":
+        movies = Movie.query.all()
+        movies_list = [{"id": movie.id, "title": movie.title, "poster": movie.poster, "description": movie.description} for movie in movies]
+        return jsonify(movies_list), 200
+
     if request.method == "POST":
-        try:
-            if form.validate_on_submit():
-                if form_errors(form) != []: 
-                    errors = form_errors(form)
-                    status_code = 400
-                    return jsonify({"errors": errors}), status_code
-              
-                poster_file = form.poster.data
-              
-                poster_filename = secure_filename(poster_file.filename)
-                
-                basedir = os.path.abspath(os.path.dirname(__file__))
-                print(basedir)
+        form = MovieForm()
 
-                poster_path = os.path.join(basedir, app.config['UPLOAD_FOLDER'], poster_filename)
-                poster_file.save(poster_path)
-                
-                movie = Movie(
-                    title=form.title.data, 
-                    poster=poster_path, 
-                    description=form.description.data
-                )
-                db.session.add(movie)
-                db.session.commit()
-          
-                if movie.id is None:
-                    status_code = 500
-                    return jsonify({"error": "Failed to save movie to the database"}), status_code
-                
-                return jsonify({
-                    "id": movie.id,
-                    "title": movie.title,
-                    "poster": movie.poster,
-                    "description": movie.description,
-                    "message": "Movie successfully added to the database"
-                }), status_code
-            
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        if not form.validate_on_submit():
+            errors = form_errors(form)
+            return jsonify({"errors": errors}), 400
 
+        missingErrors = []
+        if form.title.data == "":
+            missingErrors.append("Error in the 'Title' field: Title is required.")
+        if form.description.data == "":
+            missingErrors.append("Error in the 'Description' field: Description is required.")
+        if form.poster.data is None:
+            missingErrors.append("Error in the 'Poster' field: Poster is required.")
 
+        if len(missingErrors) > 0:
+            return jsonify({"errors": missingErrors}), 400
+
+        poster_file = form.poster.data
+        poster_filename = secure_filename(poster_file.filename)
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        poster_path = os.path.join(basedir, app.config['UPLOAD_FOLDER'], poster_filename)
+        poster_file.save(poster_path)
+
+        movie = Movie(title=form.title.data, poster=poster_path, description=form.description.data)
+        db.session.add(movie)
+        db.session.commit()
+
+        if movie.id is None:
+            return jsonify({"error": "Failed to save movie to the database"}), 400
+
+        return jsonify({
+            "id": movie.id,
+            "title": movie.title,
+            "poster": movie.poster,
+            "description": movie.description,
+            "message": "Movie successfully added to the database"
+        }), 201
 
 ###
 # The functions below should be applicable to all Flask apps.

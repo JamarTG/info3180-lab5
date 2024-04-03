@@ -2,6 +2,8 @@
 import MovieForm from "../components/MovieForm.vue";
 </script>
 
-<template>
+<template class="container">
         <MovieForm />
 </template>
+
+
