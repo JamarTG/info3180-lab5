@@ -74,8 +74,7 @@ def movies():
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-    
-    return render_template('movie-form.html', form=form)
+
 
 
 ###
