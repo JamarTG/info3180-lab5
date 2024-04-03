@@ -7,7 +7,9 @@ This file creates your application.
 
 from app import app
 from flask import render_template, request, jsonify, send_file
+from werkzeug.utils import secure_filename
 import os
+from flask_wtf.csrf import generate_csrf
 from app.forms import MovieForm
 from app.models import Movie
 from . import db
@@ -21,33 +23,60 @@ from . import db
 def index():
     return jsonify(message="This is the beginning of our API")
 
-@app.route("/api/v1/movies", methods=["POST"])
+@app.route("/api/v1/csrf-token", methods=["GET"])
+def get_csrf():
+    return jsonify({"csrf_token": generate_csrf()})
+
+@app.route("/api/v1/movies", methods=["GET", "POST"])
 def movies():
     form = MovieForm()
     errors = []
     status_code = 201
-    
-    try:
-        if form.validate_on_submit():
-           
-            if form_errors(form) != []: 
-                errors = form_errors(form)
-                status_code = 400
-                return jsonify({"errors": errors}), status_code
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    print(basedir)
+    if request.method == "POST":
+        try:
+            if form.validate_on_submit():
+                if form_errors(form) != []: 
+                    errors = form_errors(form)
+                    status_code = 400
+                    return jsonify({"errors": errors}), status_code
+              
+                poster_file = form.poster.data
+              
+                poster_filename = secure_filename(poster_file.filename)
+                
+                basedir = os.path.abspath(os.path.dirname(__file__))
+                print(basedir)
+
+                poster_path = os.path.join(basedir, app.config['UPLOAD_FOLDER'], poster_filename)
+                poster_file.save(poster_path)
+                
+                movie = Movie(
+                    title=form.title.data, 
+                    poster=poster_path, 
+                    description=form.description.data
+                )
+                db.session.add(movie)
+                db.session.commit()
+          
+                if movie.id is None:
+                    status_code = 500
+                    return jsonify({"error": "Failed to save movie to the database"}), status_code
+                
+                return jsonify({
+                    "id": movie.id,
+                    "title": movie.title,
+                    "poster": movie.poster,
+                    "description": movie.description,
+                    "message": "Movie successfully added to the database"
+                }), status_code
             
-            movie = Movie(title=form.title.data, poster=form.poster.data, description=form.description.data)
-            print(movie.title, movie.poster, movie.description)
-            db.session.add(movie)
-            db.session.commit()
-    except:
-        return form_errors(form)
-            
-         
-    return jsonify({
-                    "title": form.title.data,
-                    "poster":form.poster.data,
-                    "description": form.description.data}) , status_code
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     
+    return render_template('movie-form.html', form=form)
+
 
 ###
 # The functions below should be applicable to all Flask apps.

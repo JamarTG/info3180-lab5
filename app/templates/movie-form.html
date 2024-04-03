@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Add Movie</title>
+</head>
+<body>
+
+<h1>Add Movie</h1>
+
+<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" >
+    
+    {{ form.hidden_tag() }}
+    <div>
+        {{ form.title.label }}<br>
+        {{ form.title() }}
+        {% for error in form.title.errors %}
+            <p style="color: red;">{{ error }}</p>
+        {% endfor %}
+    </div>
+    <div>
+        {{ form.description.label }}<br>
+        {{ form.description() }}
+        {% for error in form.description.errors %}
+            <p style="color: red;">{{ error }}</p>
+        {% endfor %}
+    </div>
+    <div>
+        {{ form.poster.label }}<br>
+        {{ form.poster() }}
+        {% for error in form.poster.errors %}
+            <p style="color: red;">{{ error }}</p>
+        {% endfor %}
+    </div>
+    <div>
+        <input type="submit" value="Add Movie">
+    </div>
+</form>
+
+</body>
+</html>
