@@ -7,4 +7,3 @@ class Movie(db.Model):
     title = db.Column(db.String())
     description = db.Column(db.String())
     poster = db.Column(db.String())
-    created_at = db.Column(db.DateTime())
