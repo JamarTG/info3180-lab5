@@ -12,6 +12,7 @@ import os
 from flask_wtf.csrf import generate_csrf
 from app.forms import MovieForm
 from app.models import Movie
+from app.utils import get_uploaded_images
 from . import db
 
 
@@ -53,26 +54,34 @@ def movies():
         if len(missingErrors) > 0:
             return jsonify({"errors": missingErrors}), 400
 
-        poster_file = form.poster.data
-        poster_filename = secure_filename(poster_file.filename)
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        poster_path = os.path.join(basedir, app.config['UPLOAD_FOLDER'], poster_filename)
-        poster_file.save(poster_path)
+        try:
+         
+            poster_file = form.poster.data
+            poster_filename = secure_filename(poster_file.filename)
+            poster_path = os.path.join(app.config['UPLOAD_FOLDER'], poster_filename)
+            
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+            poster_file.save(poster_path)
 
-        movie = Movie(title=form.title.data, poster=poster_path, description=form.description.data)
-        db.session.add(movie)
-        db.session.commit()
-
-        if movie.id is None:
-            return jsonify({"error": "Failed to save movie to the database"}), 400
-
-        return jsonify({
+            movie = Movie(title=form.title.data, poster=poster_path, description=form.description.data)
+            db.session.add(movie)
+            db.session.commit()
+            
+            return jsonify({
             "id": movie.id,
             "title": movie.title,
             "poster": movie.poster,
             "description": movie.description,
             "message": "Movie successfully added to the database"
         }), 201
+            
+        except Exception as e:
+            return jsonify({"errors": e}), 400
+            
+       
+
+        
 
 ###
 # The functions below should be applicable to all Flask apps.

@@ -50,8 +50,13 @@ function getCsrfToken() {
   fetch("/api/v1/csrf-token")
     .then((response) => response.json())
     .then((data) => {
+      console.log(data)
       csrf_token.value = data.csrf_token;
+     
+    }).catch((error) => {
+      console.log("Error: " + error)
     });
+  
 }
 onMounted(() => {
   getCsrfToken();
@@ -61,6 +66,7 @@ const saveMovie = async () => {
   let movieForm = document.getElementById("movieForm");
   let form_data = new FormData(movieForm);
   form_data.append("_csrf", csrf_token.value);
+  console.log("TOKEN", csrf_token.value)
   await fetch("/api/v1/movies", {
     method: "POST",
     body: form_data,
